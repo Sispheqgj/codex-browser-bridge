@@ -1,136 +1,88 @@
 # Codex Browser Bridge
 
-An experimental, self-hosted browser controller for existing Codex desktop and SSH chats. 手机浏览器查看并控制已有 Codex 会话，保留桌面项目分组，使用独立配对认证。
+**用手机浏览器，继续电脑上的 Codex 会话。**
 
-**Status: experimental reference implementation.** Extracted from a working personal macOS deployment. The portable source has automated checks; installation on another Mac has not been verified. Desktop integration uses internal, version-dependent interfaces. This is an independent project, not an official OpenAI product.
+Self-hosted browser control for existing Codex desktop and SSH chats.
 
-## What this is useful for
+[![CI](https://github.com/Sispheqgj/codex-browser-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sispheqgj/codex-browser-bridge/actions/workflows/ci.yml)
+[![MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-- Open a small web page in Safari, without switching the ChatGPT account on the phone.
-- Browse local and configured SSH chats in one recent/project view.
-- Send to the original thread, steer or interrupt a running turn, and handle supported approvals.
-- Select the next turn's model and reasoning effort from the target device's model catalog.
-- Cache the catalog, paginate history, and render Markdown, code, tables and math on the client.
+<table>
+  <tr>
+    <td align="center"><img src="docs/assets/mobile-projects.jpg" width="300" alt="手机端按设备和项目浏览会话"><br>按项目查找会话</td>
+    <td align="center"><img src="docs/assets/mobile-chat.jpg" width="300" alt="手机端查看回复并选择模型与思考强度"><br>在原会话中继续工作</td>
+  </tr>
+</table>
 
-The phone holds bridge credentials. Codex credentials stay in their existing host-side configuration. Independent browser pairing is **not** account sharing or a way to bypass an organization's access policy.
+<sub>截图使用只读演示数据，不含真实会话或账号信息。</sub>
 
-## Existing alternatives come first
+## 功能
 
-This is not the first Codex mobile controller. Official remote connections, HAPI, Happy, Open Codex UI, and other browser bridges overlap substantially. [Related work and positioning](docs/RELATED_WORK.md) explains what was checked and what was not. If the official same-account workflow meets your needs, it is a better default than depending on internal desktop IPC.
+- **原会话接续**：查看回复、发送指令、补充当前任务、停止任务和处理常见审批。
+- **本机与 SSH**：统一浏览 Mac 和已连接服务器上的项目、最近会话及归档历史。
+- **模型设置**：从目标设备读取可用模型与思考强度，设置从下一轮生效。
+- **手机阅读**：支持 Markdown、代码高亮、表格和公式，历史消息按需加载。
+- **独立配对**：浏览器首次输入密钥后记住登录，手机上的 ChatGPT 账号保持不变。
 
-## Requirements and compatibility
+> 实验性项目：目前面向 macOS，依赖 Codex 桌面的内部接口。其他机器上的兼容性仍需验证，详见[验证范围](docs/validation.md)。
 
-- A Mac with Codex desktop running and already signed in.
-- Node.js 24+ for source checks/building. Desktop control also needs the application's compatible bundled Node and the normal Codex-managed process ancestry.
-- A dedicated existing desktop chat ID for `callerThreadId`; create/select this yourself in Codex. It is a caller context, not a destination restriction: selected targets are passed separately.
-- HTTPS for phone access. Tailscale Funnel is one option; a private Tailscale network is another.
-- For direct SSH transport: working host aliases in your own SSH config, an existing remote Codex app-server control socket, and compatible Codex versions. This project does not install or restart remote app-servers.
+## 快速开始
 
-At extraction, the installed bundled CLI reported `0.169.0-alpha.11.1`. This is a version snapshot, not a compatibility guarantee for that build or later releases; the generalized desktop-control path still needs a clean-machine check. Internal method versions and response shapes are explicit in `desktop-ipc.mjs` and `desktop.mjs`.
+需要 **macOS、已登录的 Codex 桌面应用和 Node.js 24+**。手机远程访问还需要一个 HTTPS 入口。
 
-## Install from source
+**1. 下载并初始化**
 
 ```sh
+git clone https://github.com/Sispheqgj/codex-browser-bridge.git
+cd codex-browser-bridge
 npm ci
-npm test
 npm run build
 npm run init
 ```
 
-Initialization writes private state under `~/.codex-browser-bridge`, using user-only permissions. It generates a fresh 256-bit bridge token; no HAPI installation or token is needed. Run from the repository root.
+**2. 配置电脑端连接**
 
-Edit the private `~/.codex-browser-bridge/config.json`:
-
-```json
-{
-  "port": 3007,
-  "publicOrigin": "https://your-mac.your-tailnet.ts.net",
-  "callerThreadId": "PUT_YOUR_EXISTING_DESKTOP_CHAT_ID_HERE",
-  "remotes": []
-}
-```
-
-`publicOrigin` is the exact scheme/host/port of the browser entry, with no path or trailing slash. The examples are placeholders. Optional `CODEX_BRIDGE_HOME` and existing `CODEX_HOME` select other private state locations. Optional `nodeBinary`, `codexBinary`, and `appToolsDirectory` override detected application paths.
-
-Local and desktop-discovered SSH catalogs use desktop tools. For the explicit SSH transport, add a remote entry only after confirming the existing server's socket path:
-
-```json
-{
-  "id": "devbox",
-  "name": "Development server",
-  "host": "devbox",
-  "codexBinary": "codex",
-  "socketPath": "/home/you/.codex/app-server-control/app-server-control.sock"
-}
-```
-
-Place entries in `remotes`. `host` is an SSH config alias; authentication and jump hosts stay in your SSH configuration. Do not put private keys, passwords or tokens here. Remote socket paths must be actual absolute paths, not `~` placeholders.
-
-## Start through Codex's MCP manager
+按照[安装指南](docs/setup.md)填写 `~/.codex-browser-bridge/config.json`，将辅助服务加入 Codex 的 MCP 配置，并配置 HTTPS 入口。可以使用 Tailscale Funnel，也可以通过私有 tailnet 访问。
 
 ```sh
-npm run doctor
-npm run mcp
+npm run doctor  # 检查先决条件
+npm run mcp     # 查看需要添加的 MCP 配置
 ```
 
-`doctor` checks prerequisites without invoking chats. `mcp` prints the detected command/arguments without editing Codex settings. Merge those values into your existing Codex `config.toml`, preserving its other contents. The TOML shape is:
+**3. 在手机上打开**
 
-```toml
-[mcp_servers.codex_browser_bridge]
-enabled = true
-command = "/absolute/path/to/the/application-bundled/node"
-args = ["/absolute/path/to/this/repository/stdio-host.mjs"]
-startup_timeout_sec = 15
-```
+打开 `https://你的入口/original/index.html`，首次输入私有 `access-token` 文件中的配对密钥。选择设备、项目和会话，即可继续工作。
 
-If using a custom state location, add the `env` values printed by `npm run mcp` in the corresponding MCP configuration. Refresh MCP settings; a full desktop restart may be needed to load a new service into existing chats. The helper exposes only one MCP status tool while hosting the authenticated web control API.
+保持 Mac 和 Codex 运行、联网。密钥只供自己使用；Codex 登录凭据继续留在原设备上。
 
-**A standalone `npm start` can serve HTTP but does not prove desktop control works.** The desktop's normal process trust checks still apply. Use the supported Codex-managed launch arrangement for this experimental adapter; do not disable, spoof or patch peer/signature checks. A failed check is a compatibility blocker.
-
-## Connect a phone
-
-After the Codex-managed helper is listening on loopback, choose your own HTTPS access arrangement. For example, with Tailscale already installed and authenticated:
+## 先看看界面
 
 ```sh
-tailscale funnel --bg --https=443 --set-path=/original http://127.0.0.1:3007
+npm ci
+npm run demo
 ```
 
-This command creates a public HTTPS entry to the authenticated bridge. Read the [Tailscale Funnel documentation](https://tailscale.com/docs/features/tailscale-funnel) before running it. If using a private tailnet instead, configure Serve and the phone's Tailscale client. Neither deployment is configured automatically by this repository.
+打开终端显示的本地地址即可预览。演示使用虚构数据，不连接 Codex、不读取真实会话，所有写操作都会被拒绝。
 
-Open `https://your-mac.your-tailnet.ts.net/original/index.html` in Safari and paste your bridge token from the private `access-token` file once. Never publish that token, a token-bearing QR, or an authenticated browser export. Pairing uses a signed Secure/HttpOnly cookie, currently valid for 180 days. The phone's ChatGPT app account remains unchanged.
+<details>
+<summary>查看桌面布局</summary>
 
-The generalized source uses one HTTP listener. The `/original/control` alias is served by that same listener; an extra control port is unnecessary. An earlier personal deployment used two ports for a live update.
+![桌面端项目导航与会话界面](docs/assets/desktop.jpg)
 
-## Verify before relying on it
+</details>
 
-1. Check the status tool says the bridge is Codex-managed.
-2. Open a disposable existing chat and compare its original ID on both clients.
-3. Send a harmless task from the phone and confirm the desktop observes the same turn; test an approval if your configured policy requests one.
-4. Change a model setting for the next turn and verify the desktop reflects it.
-5. Disconnect/reconnect the phone and confirm history is read back without replaying uncertain messages.
+## 项目结构
 
-This repository's automated tests do not perform those subscription-backed operations. [Validation scope](docs/VALIDATION.md) separates the original deployment evidence from the new source tests.
-
-## Development
-
-```sh
-npm test
-npm run build
-node test-http.mjs
-npm run check:release
+```text
+src/        后端、桌面与 SSH 连接、MCP 入口
+web/        浏览器界面、样式和 Markdown 渲染
+tests/      自动化测试与测试数据
+scripts/    构建、格式化和发布检查
+examples/   配置示例与只读演示
+docs/       配置指南、架构说明和截图
+dist/       本地构建产物，不提交 Git
 ```
 
-Tests use mocks and an isolated HTTP service. They do not read real chat history, call a model, or control real sessions. Build output is ignored by Git and should be generated locally. See [architecture](docs/ARCHITECTURE.md), [security](SECURITY.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
+更多：[安装配置](docs/setup.md) · [开发指南](docs/development.md) · [工作原理](docs/architecture.md) · [同类项目](docs/related-work.md) · [安全说明](SECURITY.md)
 
-## Limits
-
-- macOS desktop integration only; no Windows desktop validation.
-- A desktop/app-server upgrade may require adapter changes. This is not a stable public desktop API.
-- Offline hosts retain cached metadata but cannot be controlled.
-- Project metadata is mapped from desktop state; directory matching is a fallback.
-- File/image placeholders are shown; phone uploads/downloads and full plugin interfaces are not implemented.
-- Selected approvals are supported; unknown native forms stay on desktop.
-- No durable exactly-once delivery guarantee across bridge restarts. Refresh history before retrying an uncertain send.
-- Browser-local catalog entries and drafts are private data. Use a trusted device.
-
-MIT for this adapter's source. No Codex binaries, HAPI source, personal logs, chat histories, QR codes or credentials are distributed. The release is intentionally private to npm (`private: true`); GitHub publication is a separate action.
+[MIT License](LICENSE) · 独立开源项目，与 OpenAI 无隶属关系。

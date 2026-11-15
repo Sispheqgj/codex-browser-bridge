@@ -9,17 +9,24 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2",
-    "jsdom": "31.0.1"
+    "jsdom": "31.0.1",
+    "prettier": "3.10.1"
   },
   "scripts": {
-    "build": "node build.mjs",
+    "build": "node scripts/build.mjs",
     "test": "node scripts/test.mjs",
-    "start": "node server.mjs",
-    "init": "node cli.mjs init",
-    "doctor": "node cli.mjs doctor",
-    "mcp": "node cli.mjs mcp",
+    "start": "node src/server/index.mjs",
+    "init": "node src/cli.mjs init",
+    "doctor": "node src/cli.mjs doctor",
+    "mcp": "node src/cli.mjs mcp",
     "check:release": "node scripts/check-release.mjs",
-    "test:config": "node test-config.mjs"
+    "test:config": "node tests/config.test.mjs",
+    "demo": "node examples/demo/server.mjs",
+    "format": "prettier --ignore-path .gitignore --write .",
+    "format:check": "prettier --ignore-path .gitignore --check .",
+    "pretest": "npm run build",
+    "predemo": "npm run build",
+    "manifest": "node scripts/update-manifest.mjs"
   },
   "name": "codex-browser-bridge",
   "version": "0.1.0",
@@ -29,5 +36,10 @@
   "type": "module",
   "engines": {
     "node": ">=24"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 100
   }
 }
