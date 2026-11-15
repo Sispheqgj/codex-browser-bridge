@@ -1,0 +1,30 @@
+# Related work and release decision
+
+Checked 2026-11-15. These observations come from current repository READMEs, selected implementation files, and official documentation. Alternatives were not installed or tested end to end. This is a focused comparison, not a claim of exhaustive novelty research.
+
+| Work | Overlap and evidence boundary |
+| --- | --- |
+| [Official remote connections](https://learn.chatgpt.com/docs/remote-connections) | Already provides mobile access to a connected host and documents SSH remote environments. Requires the same ChatGPT account and workspace on mobile and host. Do not describe SSH access itself as missing from the official product. |
+| [HAPI](https://github.com/tiann/hapi), especially [Codex shared sessions](https://github.com/tiann/hapi/blob/main/docs/guide/codex-shared-sessions.md) | Terminal and web/mobile can share one app-server. The guide distinguishes HAPI-owned live executions from cold resume, which rejects another live owner. It does not establish automatic adoption of every unrelated desktop-owned execution. |
+| [Happy](https://github.com/slopus/happy) | Mobile/web/desktop access and shared agent work already exist. Its original CLI wraps Codex; current desktop/harness capabilities extend beyond that. No claim that it lacks every feature in this adapter. |
+| [Open Codex UI](https://github.com/Sube-py/open-codex-ui) | Very close overlap: existing sessions, project navigation, SSH hosts, mobile browser use and authentication. `yier_web/codex/ipc_manager.py` maintains per-thread IPC sessions and uses `open-codex-bridge`. README states non-commercial-use terms; no code was copied. Exact compatibility with our desktop build was not tested. |
+| [isgeles/codexremote](https://github.com/isgeles/codexremote) | Explicitly supports a phone and terminal sharing original chats. Its first-run instructions move terminal sessions onto one shared server and warn about existing active writers. This differs from attaching through a desktop-owned local tool/IPC channel. |
+| [yaoer9520/codex-mobile-bridge](https://github.com/yaoer9520/codex-mobile-bridge) | Windows-first browser bridge with projects, existing threads, model controls and optional relay. Its documented desktop refresh strategy and process setup differ from this macOS adapter. |
+| [ppch53/codex-mobile-bridge](https://github.com/ppch53/codex-mobile-bridge) | Another app-server bridge with Web/PWA, Telegram, approvals and pairing. Feature overlap is substantial; README alone does not prove identical desktop/SSH ownership behavior. |
+
+[openai/codex#52575](https://github.com/openai/codex/issues/52575) records a user's October desktop/iOS build missing SSH projects. It was open when checked. That is evidence of a reported version-specific problem and user demand, **not proof that the current official product universally lacks SSH mobile access**. The current official documentation describes the supported path. Older issue [#24212](https://github.com/openai/codex/issues/24212) is closed.
+
+## What is worth sharing here
+
+The useful contribution is a small, inspectable macOS reference: independent browser pairing, a unified local/SSH catalog, desktop project mapping, live original-thread control, and conservative mobile history loading. The original setup also documents failure boundaries around desktop ownership, process trust, and account-independent web access.
+
+## What should not be claimed
+
+- First mobile controller, first browser UI, first shared Codex conversation, or unique model controls.
+- That unrelated alternatives cannot control original sessions without testing them.
+- A universal replacement for official remote connections or mature tools.
+- That a successful personal deployment establishes clean-machine reproducibility, cross-platform compatibility, a security audit, or production reliability.
+
+## Recommendation
+
+This repository is published as an **experimental reference and deployment case study**, with this comparison prominent. A technical article plus a small repository has clearer value than marketing a new general-purpose platform. If the goal is to maximize practical impact with minimal maintenance, compare or contribute the desktop/project compatibility work to an existing project first. There is no need to invest in a broad product solely because the personal workflow works.
